@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: falco-operator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: falco-operator
+  template:
+    metadata:
+      labels:
+        name: falco-operator
+    spec:
+      serviceAccountName: falco-operator
+      containers:
+        - name: falco-operator
+          image: REPLACE_IMAGE
+          ports:
+          - containerPort: 60000
+            name: metrics
+          command:
+          - falco-operator
+          imagePullPolicy: Always
+          env:
+            - name: WATCH_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: OPERATOR_NAME
+              value: "falco-operator"
