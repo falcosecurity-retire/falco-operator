@@ -1,3 +1,5 @@
+# Try to locate the latest image from https://hub.docker.com/r/sysdig/falco
+
 FROM sysdig/falco:0.12.1
 
 USER root
@@ -12,6 +14,6 @@ ADD build/falco-operator-amd64 /opt/bin/falco-operator
 
 ENV PATH=${PATH}:/opt/bin
 
-ENTRYPOINT ["dumb-init", "--", "falco-operator", "--", "/docker-entrypoint.sh"]
+ENTRYPOINT ["dumb-init", "--", "falco-operator"]
 
 CMD []

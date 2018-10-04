@@ -22,11 +22,11 @@ type FalcoRule struct {
 }
 
 type FalcoRuleSpec struct {
-	Rule string `json:"rule"`
-	Desc string `json:"desc"`
+	Rule      string `json:"rule"`
+	Desc      string `json:"desc"`
 	Condition string `json:"condition"`
-	Output string `json:"output"`
-	priority string `json:"priority"`
+	Output    string `json:"output"`
+	Priority  string `json:"priority"`
 }
 
 type FalcoRuleStatus struct {

@@ -57,13 +57,15 @@ func (o *Supervisor) DoSet(mem map[string]string) error {
 
 		var bytesData []byte
 
-		bytesData, err = afero.ReadFile(o.fs, fmt.Sprintf("%s.orig", set.Path))
+		// To avoid `panic: open /etc/falco/falco.yaml.orig: read-only file system` errors
+		origFile := fmt.Sprintf("/var/falco-operator/%s.orig", filepath.Base(set.Path))
+		bytesData, err = afero.ReadFile(o.fs, origFile)
 		if err != nil {
 			bytesData, err = afero.ReadFile(o.fs, set.Path)
 			if err != nil {
 				return err
 			}
-			if err := afero.WriteFile(o.fs, fmt.Sprintf("%s.orig", set.Path), bytesData, 0644); err != nil {
+			if err := afero.WriteFile(o.fs, origFile, bytesData, 0644); err != nil {
 				return err
 			}
 		}
@@ -108,7 +110,8 @@ func (o *Supervisor) DoSet(mem map[string]string) error {
 			result, err = yaml.JSONToYAML(result)
 		}
 
-		err = afero.WriteFile(o.fs, set.Path, append(result, []byte("\n")...), 0644)
+		writePath := fmt.Sprintf("/var/falco-operator/%s", filepath.Base(set.Path))
+		err = afero.WriteFile(o.fs, writePath, append(result, []byte("\n")...), 0644)
 		if err != nil {
 			return err
 		}
@@ -258,6 +261,14 @@ func Supervise(args []string, opts SuperviseOpts) error {
 
 	sp := &Supervisor{opts, afero.NewOsFs()}
 
+	falcoYaml, err := afero.ReadFile(sp.fs, "/etc/falco/falco.yaml")
+	if err != nil {
+		return err
+	}
+	if err := afero.WriteFile(sp.fs, "/var/falco-operator/falco.yaml", falcoYaml, 0644); err != nil {
+		return err
+	}
+
 	w := watcher.New()
 	w.IgnoreHiddenFiles(true)
 
@@ -289,6 +300,14 @@ func Supervise(args []string, opts SuperviseOpts) error {
 					} else {
 						if err := afero.Walk(sp.fs, event.Path, func(path string, info os.FileInfo, err error) error {
 							if info.IsDir() {
+								return nil
+							}
+							if strings.HasPrefix(filepath.Base(filepath.Dir(path)), ".") {
+								fmt.Printf("ignoring dir of %s\n", path)
+								return nil
+							}
+							if strings.HasPrefix(info.Name(), ".") {
+								fmt.Printf("ignoring %s\n", path)
 								return nil
 							}
 							fmt.Printf("%s has been updated\n", path)
@@ -380,6 +399,17 @@ func Supervise(args []string, opts SuperviseOpts) error {
 				if info.IsDir() {
 					return nil
 				}
+				// Ignore files under ..$DIR like:
+				// - /var/falco-operator/rules/..2018_10_04_13_42_27.933690714/default
+				// -/var/falco-operator/rules/..2018_10_04_13_42_27.933690714/test1
+				if strings.HasPrefix(filepath.Base(filepath.Dir(path)), ".") {
+					fmt.Printf("ignoring dir of %s\n", path)
+					return nil
+				}
+				if strings.HasPrefix(info.Name(), ".") {
+					fmt.Printf("ignoring %s\n", path)
+					return nil
+				}
 				fmt.Printf("%s has been updated\n", path)
 				paths = append(paths, path)
 				return nil
@@ -401,7 +431,7 @@ func Supervise(args []string, opts SuperviseOpts) error {
 		panic(err)
 	}
 
-	err := proc.start()
+	err = proc.start()
 	if err != nil {
 		return err
 	}

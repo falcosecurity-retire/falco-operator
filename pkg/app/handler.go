@@ -38,13 +38,21 @@ func (h *Handler) Handle(ctx context.Context, event sdk.Event) error {
 		cm := h.newConfigmap()
 
 		err := sdk.Update(cm)
-		if err != nil && errors.IsNotFound(err) {
-			logrus.Infof("creating configmap...", o)
+		if err != nil {
+			if errors.IsNotFound(err) {
+				logrus.Infof("creating configmap...", o)
 
-			err := sdk.Create(cm)
-			if err != nil && !errors.IsAlreadyExists(err) {
-				logrus.Errorf("failed to create busybox pod : %v", err)
-				return err
+				err := sdk.Create(cm)
+				if err != nil {
+					if errors.IsAlreadyExists(err) {
+						logrus.Info("expected error. retrying: %v", err)
+					} else {
+						logrus.Errorf("failed to create busybox pod : %v", err)
+						return err
+					}
+				}
+			} else {
+				return fmt.Errorf("unexpected err: %v", err)
 			}
 		}
 	default:
