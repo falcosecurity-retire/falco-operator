@@ -11,26 +11,96 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"github.com/gin-gonic/gin/json"
+	"fmt"
 )
 
-func NewHandler() sdk.Handler {
-	return &Handler{}
+func NewHandler(opts OperateOpts) sdk.Handler {
+	return &Handler{OperateOpts: opts}
 }
 
 type Handler struct {
-	// Fill me
+	OperateOpts
+
+	nsToRules map[string]map[string]v1alpha1.FalcoRuleSpec
 }
 
 func (h *Handler) Handle(ctx context.Context, event sdk.Event) error {
+	fmt.Printf("handling: %+v\n", event)
 	switch o := event.Object.(type) {
 	case *v1alpha1.FalcoRule:
-		err := sdk.Create(newbusyBoxPod(o))
-		if err != nil && !errors.IsAlreadyExists(err) {
-			logrus.Errorf("failed to create busybox pod : %v", err)
-			return err
+		logrus.Infof("handling falcorule: %v", o)
+
+		h.Store(o, event.Deleted)
+
+		logrus.Infof("updating configmap...", o)
+
+		cm := h.newConfigmap()
+
+		err := sdk.Update(cm)
+		if err != nil && errors.IsNotFound(err) {
+			logrus.Infof("creating configmap...", o)
+
+			err := sdk.Create(cm)
+			if err != nil && !errors.IsAlreadyExists(err) {
+				logrus.Errorf("failed to create busybox pod : %v", err)
+				return err
+			}
 		}
+	default:
+		fmt.Printf("unexpected event: %+v\n", event)
 	}
 	return nil
+}
+
+func (c *Handler) Store(cr *v1alpha1.FalcoRule, deleted bool) {
+	ns := cr.Namespace
+
+	if c.nsToRules == nil {
+		c.nsToRules = map[string]map[string]v1alpha1.FalcoRuleSpec{}
+	}
+
+	_, ok := c.nsToRules[ns]
+	if !ok {
+		c.nsToRules[ns] = map[string]v1alpha1.FalcoRuleSpec{}
+	}
+
+	if deleted {
+		delete(c.nsToRules[ns], cr.Name)
+	} else {
+		c.nsToRules[ns][cr.Name] = cr.Spec
+	}
+}
+
+func (c *Handler) newConfigmap() *corev1.ConfigMap {
+	files := map[string]string{}
+	labels := map[string]string{}
+
+	for ns, nameToRule := range c.nsToRules {
+		rules := []v1alpha1.FalcoRuleSpec{}
+		for _, rule := range nameToRule {
+			rules = append(rules, rule)
+		}
+		bytes, err := json.Marshal(rules)
+		if err != nil {
+			panic(err)
+		}
+		files[ns] = string(bytes)
+	}
+
+	return &corev1.ConfigMap{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "ConfigMap",
+			APIVersion: "v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      c.ConfigMapName,
+			Namespace: c.ConfigMapNamespace,
+			OwnerReferences: []metav1.OwnerReference{},
+			Labels: labels,
+		},
+		Data: files,
+	}
 }
 
 // newbusyBoxPod demonstrates how to create a busybox pod
