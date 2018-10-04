@@ -256,11 +256,6 @@ func Supervise(args []string, opts SuperviseOpts) error {
 
 	proc := &monitoredProc{cmd: cmd, arg: arg, stopGracePeriod: opts.StopGracePeriod,}
 
-	err := proc.start()
-	if err != nil {
-		return err
-	}
-
 	sp := &Supervisor{opts, afero.NewOsFs()}
 
 	w := watcher.New()
@@ -292,8 +287,16 @@ func Supervise(args []string, opts SuperviseOpts) error {
 							}
 						}
 					} else {
-						fmt.Printf("%s has been updated\n", event.Path)
-						paths = append(paths, event.Path)
+						if err := afero.Walk(sp.fs, event.Path, func(path string, info os.FileInfo, err error) error {
+							if info.IsDir() {
+								return nil
+							}
+							fmt.Printf("%s has been updated\n", path)
+							paths = append(paths, path)
+							return nil
+						}); err != nil {
+							panic(err)
+						}
 					}
 				} else {
 					if event.Op == watcher.Remove {
@@ -369,6 +372,39 @@ func Supervise(args []string, opts SuperviseOpts) error {
 	fmt.Println()
 
 	fmt.Printf("Watching %d files\n", len(w.WatchedFiles()))
+
+	paths := []string{}
+	for path, fileOrDir := range w.WatchedFiles() {
+		if fileOrDir.IsDir() {
+			if err := afero.Walk(sp.fs, path, func(path string, info os.FileInfo, err error) error {
+				if info.IsDir() {
+					return nil
+				}
+				fmt.Printf("%s has been updated\n", path)
+				paths = append(paths, path)
+				return nil
+			}); err != nil {
+				return err
+			}
+		} else {
+			paths = append(paths, path)
+		}
+	}
+	for _, path := range paths {
+		content, err := afero.ReadFile(sp.fs, path)
+		if err != nil {
+			panic(err)
+		}
+		mem[path] = string(content)
+	}
+	if err := sp.DoSet(mem); err != nil {
+		panic(err)
+	}
+
+	err := proc.start()
+	if err != nil {
+		return err
+	}
 
 	if err := w.Start(opts.WatchInterval); err != nil {
 		log.Fatalln(err)
