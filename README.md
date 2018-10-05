@@ -20,7 +20,7 @@ As a cluster administrator, all you have to do is:
 
 After that, application developers can write a `FalcoRule` in their own namespaces:
 
-```
+```yaml
 apiVersion: "mumoshu.github.io/v1alpha1"
 kind: "FalcoRule"
 metadata:
