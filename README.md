@@ -39,6 +39,35 @@ Then, `falco-operator` takes care of the rest. It:
 - Creates a [Falco Rules file](https://github.com/falcosecurity/falco/wiki/Falco-Rules) per namespace
 - Restart `falco` running on each node in your cluster
 
+## How it works
+
+If you are familiar with falco rules files, the above `FalcoRule` is translated to a rules file like:
+
+`/var/falco-operator/rules/default.yaml`:
+
+```yaml
+- rule: shell_in_container
+  desc: notice shell activity within a container
+  condition: container.id != host and proc.name = bash
+  output: shell in a container (user=%user.name container_id=%container.id container_name=%container.name shell=%proc.name parent=%proc.pname cmdline=%proc.cmdline)
+  priority: WARNING
+```
+
+`falco-operator` automatically clones `/etc/falco/falco.yaml` to `/var/falco-operator/falco.yaml`, adding the generated rules files to `rules:` that looks:
+
+`/var/falco-operator/falco.yaml`:
+
+```yaml
+rules:
+- /var/falco-operator/rules/default.yaml
+```
+
+The operator points `falco` to the `falco.yaml` and (re)start it, so that the generated configuration is taken into account:
+
+```console
+/usr/bin/falco -c /var/falco-operator/falco.yaml
+```
+
 ## Getting Started
 
 ```console
