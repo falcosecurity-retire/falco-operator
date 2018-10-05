@@ -1,7 +1,6 @@
 package app
 
 import (
-	"github.com/reddec/monexec/monexec"
 	"github.com/radovskyb/watcher"
 	"github.com/tidwall/sjson"
 	"github.com/spf13/afero"
@@ -12,8 +11,6 @@ import (
 	"os"
 	"os/signal"
 	"errors"
-	"github.com/reddec/monexec/pool"
-	"context"
 	"syscall"
 	"path/filepath"
 	"github.com/ghodss/yaml"
@@ -21,7 +18,7 @@ import (
 	"bytes"
 )
 
-type SuperviseOpts struct {
+type SupervisorOpts struct {
 	RestarGracePeriod time.Duration
 	WatchInterval     time.Duration
 	StopGracePeriod   time.Duration
@@ -37,7 +34,11 @@ type Set struct {
 }
 
 type Supervisor struct {
-	SuperviseOpts
+	SupervisorOpts
+
+	cmd string
+	args []string
+
 	fs afero.Fs
 }
 
@@ -128,138 +129,35 @@ func parseSet(s string) (*Set, error) {
 		parsed[0], parsed[1], parsed[2],
 	}, nil
 }
-
-type monitoredProc struct {
-	cmd string
-	arg []string
-	stopGracePeriod time.Duration
-
-	stop context.CancelFunc
-	mon *monexec.Config
-	ctx context.Context
-
-	waitUntilStop context.Context
-	stopListener  *stopListener
-}
-
-type noopListener struct {
-}
-
-func (l noopListener) OnSpawned(ctx context.Context, in pool.Instance) {
-
-}
-
-func (l noopListener) OnStarted(ctx context.Context, in pool.Instance) {
-
-}
-
-func (l noopListener) OnStopped(ctx context.Context, in pool.Instance, err error) {
-
-}
-
-func (l noopListener) OnFinished(ctx context.Context, in pool.Instance) {
-
-}
-
-type stopListener struct {
-	ctx context.Context
-	cancel context.CancelFunc
-
-	noopListener
-}
-
-func (l *stopListener) OnStopped(ctx context.Context, in pool.Instance, err error) {
-	_, cancel := l.currentCtx()
-	cancel()
-}
-
-func (l *stopListener) currentCtx() (context.Context, context.CancelFunc) {
-	if l.ctx == nil {
-		chld, cancel := context.WithCancel(context.Background())
-		l.ctx = chld
-		l.cancel = cancel
-	}
-	return l.ctx, l.cancel
-}
-
-func (l *stopListener) WaitUntilStop() context.Context {
-	curCtx, _ := l.currentCtx()
-	chldCtx, _ := context.WithCancel(curCtx)
-	return chldCtx
-}
-
-func (p *monitoredProc) start() error {
-	if p.stop != nil {
-		return errors.New("tried to start before stopping")
-	}
-
-	if p.mon == nil {
-		p.mon = &monexec.Config{
-			Services: []pool.Executable{{
-				Command: p.cmd,
-				Args:    p.arg,
-				Restart: -1,
-				RestartTimeout: p.stopGracePeriod,
-			},},
-		}
-	}
-
-	fmt.Println("starting app...")
-
-	sv := &pool.Pool{}
-	p.stopListener = &stopListener{}
-	sv.Watch(p.stopListener)
-	p.waitUntilStop = p.stopListener.WaitUntilStop()
-	ctx, stop := context.WithCancel(context.Background())
-
-	if err := p.mon.Run(sv, ctx); err != nil {
-		return err
-	}
-
-	// This is useless as it emits immediately after we call `stop()`
-	p.ctx = ctx
-
-	p.stop = stop
-
-	return nil
-}
-
-func (p *monitoredProc) doStop() {
-	fmt.Println("stopping app...")
-	if p.stop != nil {
-		p.stop()
-		p.stop = nil
-
-		select {
-		case <-p.waitUntilStop.Done():
-			fmt.Println("done waiting until app stops")
-			p.waitUntilStop = nil
-		}
-	}
-}
-
-func (p *monitoredProc) restart() error {
-	p.doStop()
-
-	if err := p.start(); err != nil {
-		return err
-	}
-	return nil
-}
-
-func Supervise(args []string, opts SuperviseOpts) error {
+func NewSupervisor(args []string, opts SupervisorOpts) (*Supervisor, error) {
 	if len(args) == 0 {
-		return errors.New("missing args")
+		return nil, errors.New("missing args")
 	}
+
 	if opts.RestarGracePeriod <= opts.WatchInterval {
-		return errors.New("watch interval should be less than restart grace period")
+		return nil, errors.New("watch interval should be less than restart grace period")
 	}
+
 	cmd := args[0]
 	arg := args[1:]
 
-	proc := &monitoredProc{cmd: cmd, arg: arg, stopGracePeriod: opts.StopGracePeriod,}
+	return &Supervisor{SupervisorOpts: opts, fs: afero.NewOsFs(), cmd: cmd, args: arg,}, nil
+}
 
-	sp := &Supervisor{opts, afero.NewOsFs()}
+func Supervise(args []string, opts SupervisorOpts) error {
+	sp, err := NewSupervisor(args, opts)
+	if err != nil {
+		return err
+	}
+	return sp.Supervise()
+}
+
+func (sp *Supervisor) Supervise() error {
+	opts := sp.SupervisorOpts
+	cmd := sp.cmd
+	arg := sp.args
+
+	proc := &process{cmd: cmd, arg: arg, stopGracePeriod: opts.StopGracePeriod,}
 
 	falcoYaml, err := afero.ReadFile(sp.fs, "/etc/falco/falco.yaml")
 	if err != nil {

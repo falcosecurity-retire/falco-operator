@@ -9,7 +9,7 @@ import (
 var supervise *cobra.Command
 
 func init() {
-	opts := app.SuperviseOpts{}
+	opts := app.SupervisorOpts{}
 
 	supervise = &cobra.Command{
 		Use:          "supervise",
