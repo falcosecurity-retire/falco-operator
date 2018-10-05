@@ -25,6 +25,7 @@ apiVersion: "mumoshu.github.io/v1alpha1"
 kind: "FalcoRule"
 metadata:
   name: "bash"
+  namespace: "default"
 spec:
   rule: shell_in_container
   desc: notice shell activity within a container
