@@ -1,4 +1,45 @@
-Installation:
+# falco-operator
+
+[falco-operator](http://github.com/mumoshu/falco-operator) is a [Kubernetes operator](https://coreos.com/operators/)
+for [Sysdig Falco](https://www.sysdig.com/opensource/falco/).
+ 
+
+To know more about the original Sysdig Falco and its Helm chart, have a look at [stable/falco](https://github.com/helm/charts/tree/master/stable/falco).
+
+## Introduction
+
+In simple workds, `falco-operator` helps `DevSecOps`.
+
+With it, you can delegate writing a bunch of application-specific container behavioral monitoring rules to
+your application developer.
+
+As a cluster administrator, all you have to do is:
+
+- Deploy a `falco-operator` into your cluster by using the `helm` chart
+- Provide application developers correct RBAC roles and bindings to allow access to `falcorules` within their namespaces  
+
+After that, application developers can write a `FalcoRule` in their own namespaces:
+
+```
+apiVersion: "mumoshu.github.io/v1alpha1"
+kind: "FalcoRule"
+metadata:
+  name: "bash"
+spec:
+  rule: shell_in_container
+  desc: notice shell activity within a container
+  condition: container.id != host and proc.name = bash
+  output: shell in a container (user=%user.name container_id=%container.id container_name=%container.name shell=%proc.name parent=%proc.pname cmdline=%proc.cmdline)
+  priority: WARNING
+```
+
+Then, `falco-operator` takes care of the rest. It:
+
+- Watches for `FalcoRule`s, group by namespaces,
+- Creates a []Falco Rules file]() per namespace
+- Restart `falco` running on each node in your cluster
+
+## Getting Started
 
 ```console
 helm tiller run -- \
