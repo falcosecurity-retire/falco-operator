@@ -8,7 +8,7 @@ To know more about the original Sysdig Falco and its Helm chart, have a look at 
 
 ## Introduction
 
-In simple workds, `falco-operator` helps `DevSecOps`.
+In simple workds, `falco-operator` helps [`DevSecOps`](https://www.redhat.com/ja/topics/devops/what-is-devsecops).
 
 With it, you can delegate writing a bunch of application-specific container behavioral monitoring rules to
 your application developer.
