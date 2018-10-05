@@ -36,7 +36,7 @@ spec:
 Then, `falco-operator` takes care of the rest. It:
 
 - Watches for `FalcoRule`s, group by namespaces,
-- Creates a []Falco Rules file]() per namespace
+- Creates a [Falco Rules file](https://github.com/falcosecurity/falco/wiki/Falco-Rules) per namespace
 - Restart `falco` running on each node in your cluster
 
 ## Getting Started
