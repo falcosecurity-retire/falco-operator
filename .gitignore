@@ -1,8 +1,10 @@
+# falco-operator specifics
+/.idea
+/build
 
 # Temporary Build Files
 tmp/_output
 tmp/_test
-
 
 # Created by https://www.gitignore.io/api/go,vim,emacs,visualstudiocode
 
