@@ -2,21 +2,21 @@ package cmd
 
 import (
 	"github.com/spf13/cobra"
-	"github.com/mumoshu/falco-operator/pkg/app"
 	"time"
+	"github.com/mumoshu/falco-operator/pkg/proc"
 )
 
 var supervise *cobra.Command
 
 func init() {
-	opts := app.SupervisorOpts{}
+	opts := proc.SupervisorOpts{}
 
 	supervise = &cobra.Command{
 		Use:          "supervise",
 		Short:        "Supervisor the targeted application and restart it on config changes",
 		Long:         ``,
 		RunE:         func(cmd *cobra.Command, args []string) error {
-			return app.Supervise(args, opts)
+			return proc.Supervise(args, opts)
 		},
 		SilenceUsage: true,
 	}

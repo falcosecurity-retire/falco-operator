@@ -1,4 +1,4 @@
-package app
+package proc
 
 import (
 	"github.com/radovskyb/watcher"
@@ -28,22 +28,22 @@ type SupervisorOpts struct {
 }
 
 type Set struct {
-	Path string
-	Key string
+	Path  string
+	Key   string
 	Value string
 }
 
 type Supervisor struct {
 	SupervisorOpts
 
-	cmd string
-	args []string
+	Command string
+	Args    []string
 
-	fs afero.Fs
+	Fs afero.Fs
 }
 
 type templateData struct {
-	Path string
+	Path    string
 	Content string
 }
 
@@ -60,13 +60,13 @@ func (o *Supervisor) DoSet(mem map[string]string) error {
 
 		// To avoid `panic: open /etc/falco/falco.yaml.orig: read-only file system` errors
 		origFile := fmt.Sprintf("/var/falco-operator/%s.orig", filepath.Base(set.Path))
-		bytesData, err = afero.ReadFile(o.fs, origFile)
+		bytesData, err = afero.ReadFile(o.Fs, origFile)
 		if err != nil {
-			bytesData, err = afero.ReadFile(o.fs, set.Path)
+			bytesData, err = afero.ReadFile(o.Fs, set.Path)
 			if err != nil {
 				return err
 			}
-			if err := afero.WriteFile(o.fs, origFile, bytesData, 0644); err != nil {
+			if err := afero.WriteFile(o.Fs, origFile, bytesData, 0644); err != nil {
 				return err
 			}
 		}
@@ -112,7 +112,7 @@ func (o *Supervisor) DoSet(mem map[string]string) error {
 		}
 
 		writePath := fmt.Sprintf("/var/falco-operator/%s", filepath.Base(set.Path))
-		err = afero.WriteFile(o.fs, writePath, append(result, []byte("\n")...), 0644)
+		err = afero.WriteFile(o.Fs, writePath, append(result, []byte("\n")...), 0644)
 		if err != nil {
 			return err
 		}
@@ -129,6 +129,7 @@ func parseSet(s string) (*Set, error) {
 		parsed[0], parsed[1], parsed[2],
 	}, nil
 }
+
 func NewSupervisor(args []string, opts SupervisorOpts) (*Supervisor, error) {
 	if len(args) == 0 {
 		return nil, errors.New("missing args")
@@ -141,7 +142,7 @@ func NewSupervisor(args []string, opts SupervisorOpts) (*Supervisor, error) {
 	cmd := args[0]
 	arg := args[1:]
 
-	return &Supervisor{SupervisorOpts: opts, fs: afero.NewOsFs(), cmd: cmd, args: arg,}, nil
+	return &Supervisor{SupervisorOpts: opts, Fs: afero.NewOsFs(), Command: cmd, Args: arg,}, nil
 }
 
 func Supervise(args []string, opts SupervisorOpts) error {
@@ -154,16 +155,16 @@ func Supervise(args []string, opts SupervisorOpts) error {
 
 func (sp *Supervisor) Supervise() error {
 	opts := sp.SupervisorOpts
-	cmd := sp.cmd
-	arg := sp.args
+	cmd := sp.Command
+	arg := sp.Args
 
-	proc := &process{cmd: cmd, arg: arg, stopGracePeriod: opts.StopGracePeriod,}
+	proc := &Process{Command: cmd, Args: arg, StopGracePeriod: opts.StopGracePeriod,}
 
-	falcoYaml, err := afero.ReadFile(sp.fs, "/etc/falco/falco.yaml")
+	falcoYaml, err := afero.ReadFile(sp.Fs, "/etc/falco/falco.yaml")
 	if err != nil {
 		return err
 	}
-	if err := afero.WriteFile(sp.fs, "/var/falco-operator/falco.yaml", falcoYaml, 0644); err != nil {
+	if err := afero.WriteFile(sp.Fs, "/var/falco-operator/falco.yaml", falcoYaml, 0644); err != nil {
 		return err
 	}
 
@@ -196,7 +197,7 @@ func (sp *Supervisor) Supervise() error {
 							}
 						}
 					} else {
-						if err := afero.Walk(sp.fs, event.Path, func(path string, info os.FileInfo, err error) error {
+						if err := afero.Walk(sp.Fs, event.Path, func(path string, info os.FileInfo, err error) error {
 							if info.IsDir() {
 								return nil
 							}
@@ -226,7 +227,7 @@ func (sp *Supervisor) Supervise() error {
 				}
 
 				for _, path := range paths {
-					content, err := afero.ReadFile(sp.fs, path)
+					content, err := afero.ReadFile(sp.Fs, path)
 					if err != nil {
 						panic(err)
 					}
@@ -255,7 +256,7 @@ func (sp *Supervisor) Supervise() error {
 					panic(err)
 				}
 				if opts.Restart {
-					if err := proc.restart(); err != nil {
+					if err := proc.Restart(); err != nil {
 						panic(err)
 					}
 				}
@@ -293,7 +294,7 @@ func (sp *Supervisor) Supervise() error {
 	paths := []string{}
 	for path, fileOrDir := range w.WatchedFiles() {
 		if fileOrDir.IsDir() {
-			if err := afero.Walk(sp.fs, path, func(path string, info os.FileInfo, err error) error {
+			if err := afero.Walk(sp.Fs, path, func(path string, info os.FileInfo, err error) error {
 				if info.IsDir() {
 					return nil
 				}
@@ -319,7 +320,7 @@ func (sp *Supervisor) Supervise() error {
 		}
 	}
 	for _, path := range paths {
-		content, err := afero.ReadFile(sp.fs, path)
+		content, err := afero.ReadFile(sp.Fs, path)
 		if err != nil {
 			panic(err)
 		}
@@ -329,7 +330,7 @@ func (sp *Supervisor) Supervise() error {
 		panic(err)
 	}
 
-	err = proc.start()
+	err = proc.Start()
 	if err != nil {
 		return err
 	}
@@ -346,7 +347,7 @@ func (sp *Supervisor) Supervise() error {
 		go func() {
 			for range c {
 				// Stop the targeted application process
-				proc.stop()
+				proc.StopAsync()
 
 				fmt.Println("application stopped")
 

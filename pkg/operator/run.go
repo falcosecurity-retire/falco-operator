@@ -1,4 +1,4 @@
-package app
+package operator
 
 import (
 	"github.com/sirupsen/logrus"
@@ -28,7 +28,7 @@ func printVersion() {
 	logrus.Infof("operator-sdk Version: %v", sdkVersion.Version)
 }
 
-func Operate(opts OperateOpts) error {
+func Run(opts OperateOpts) error {
 	printVersion()
 
 	sdk.ExposeMetricsPort()

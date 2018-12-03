@@ -1,4 +1,4 @@
-package app
+package proc
 
 import (
 	"time"
@@ -9,12 +9,13 @@ import (
 	"errors"
 )
 
-type process struct {
-	cmd string
-	arg []string
-	stopGracePeriod time.Duration
+type Process struct {
+	Command         string
+	Args            []string
+	StopGracePeriod time.Duration
 
-	stop context.CancelFunc
+	StopAsync context.CancelFunc
+
 	mon *monexec.Config
 	ctx context.Context
 
@@ -22,18 +23,18 @@ type process struct {
 	stopListener  *stopListener
 }
 
-func (p *process) start() error {
-	if p.stop != nil {
+func (p *Process) Start() error {
+	if p.StopAsync != nil {
 		return errors.New("tried to start before stopping")
 	}
 
 	if p.mon == nil {
 		p.mon = &monexec.Config{
 			Services: []pool.Executable{{
-				Command: p.cmd,
-				Args:    p.arg,
+				Command: p.Command,
+				Args:    p.Args,
 				Restart: -1,
-				RestartTimeout: p.stopGracePeriod,
+				RestartTimeout: p.StopGracePeriod,
 			},},
 		}
 	}
@@ -53,16 +54,16 @@ func (p *process) start() error {
 	// This is useless as it emits immediately after we call `stop()`
 	p.ctx = ctx
 
-	p.stop = stop
+	p.StopAsync = stop
 
 	return nil
 }
 
-func (p *process) doStop() {
+func (p *Process) Stop() {
 	fmt.Println("stopping app...")
-	if p.stop != nil {
-		p.stop()
-		p.stop = nil
+	if p.StopAsync != nil {
+		p.StopAsync()
+		p.StopAsync = nil
 
 		select {
 		case <-p.waitUntilStop.Done():
@@ -72,10 +73,10 @@ func (p *process) doStop() {
 	}
 }
 
-func (p *process) restart() error {
-	p.doStop()
+func (p *Process) Restart() error {
+	p.Stop()
 
-	if err := p.start(); err != nil {
+	if err := p.Start(); err != nil {
 		return err
 	}
 	return nil
