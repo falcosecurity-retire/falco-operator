@@ -16,7 +16,6 @@ e2e:
 	kubectl apply -f deploy/service_account.yaml
 	kubectl apply -f deploy/role_binding.yaml
 	kubectl apply -f deploy/operator.yaml
-	sed -i 's|ACCESS_KEY|${SYSDIG_AGENT_ACCESS_KEY}|g' deploy/crds/falco_v1alpha1_falco_cr.yaml
 	kubectl apply -f deploy/crds/falco_v1alpha1_falco_cr.yaml
 
 
