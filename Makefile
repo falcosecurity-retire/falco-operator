@@ -1,6 +1,6 @@
-IMAGE = nestorsalceda/falco-operator
+IMAGE = falcosecurity/falco-operator
 # Use same version than helm chart
-VERSION = v0.5.6
+VERSION = helm-based-v0.5.6
 
 .PHONY: build
 
