@@ -1,25 +1,28 @@
-.PHONY: testrun
-testrun:
-	go build . && ./falco-operator supervise --set "falco.yaml=rules_file={{.File.Path}}" --watch foo --watch-interval 1s --restart-grace-period 5s --stop-grace-period 500ms -- bash -c 'echo started myapp; cat foo; sleep 100'
+IMAGE = nestorsalceda/falco-operator
+# Use same version than helm chart
+VERSION = v0.5.6
 
-.PHONY: testrun2
-testrun2:
-	go build . && ./falco-operator supervise --set "falco.yaml=rules_file.-1={{.Path}}+{{.Content}}" --watch watched --watch-interval 1s --restart-grace-period 5s --stop-grace-period 500ms -- bash -c 'echo started myapp; echo dumping falco.yaml...; cat falco.yaml; sleep 100'
+.PHONY: build
 
-.PHONY: server-defaultns
-server-defaultns:
-	OPERATOR_NAME=falco-erator operator-sdk up local
+build:
+	operator-sdk build $(IMAGE):$(VERSION)
 
-# WATCH_NAMESPACE="" does not seem to work
-.PHONY: server-allns
-server-allns:
-	OPERATOR_NAME=falco-operator operator-sdk up local --kubeconfig ~/.kube/config --namespace ""
+push:
+	docker push $(IMAGE):$(VERSION)
 
-.PHONY: build-linux
-build-linux:
-	mkdir -p build
-	GOOS=linux GOARCH=amd64 go build -o build/falco-operator-amd64 .
+e2e:
+	kubectl apply -f deploy/crds/falco_v1alpha1_falco_crd.yaml
+	sed -i 's|REPLACE_IMAGE|docker.io/$(IMAGE):$(VERSION)|g' deploy/operator.yaml
+	kubectl apply -f deploy/service_account.yaml
+	kubectl apply -f deploy/role_binding.yaml
+	kubectl apply -f deploy/operator.yaml
+	sed -i 's|ACCESS_KEY|${SYSDIG_AGENT_ACCESS_KEY}|g' deploy/crds/falco_v1alpha1_falco_cr.yaml
+	kubectl apply -f deploy/crds/falco_v1alpha1_falco_cr.yaml
 
-.PHONY: dockerimage
-dockerimage: build-linux
-	docker build -t mumoshu/falco-operator:v0.12.1 .
+
+e2e-clean:
+	kubectl delete -f deploy/crds/falco_v1alpha1_falco_cr.yaml
+	kubectl delete -f deploy/operator.yaml
+	kubectl delete -f deploy/role_binding.yaml
+	kubectl delete -f deploy/service_account.yaml
+	kubectl delete -f deploy/crds/falco_v1alpha1_falco_crd.yaml

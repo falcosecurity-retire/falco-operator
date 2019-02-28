@@ -1,0 +1,5 @@
+---
+- version: v1alpha1
+  group: falco.org
+  kind: Falco
+  chart: /opt/helm/helm-charts/falco
