@@ -117,4 +117,4 @@ Just run the `kubectl delete` command to remove the operator and its dependencie
 
 ```shell
 kubectl delete -f https://raw.githubusercontent.com/falcosecurity/falco-operator/helm-based-operator/bundle.yaml
-`
+```
