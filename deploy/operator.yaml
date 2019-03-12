@@ -16,7 +16,7 @@ spec:
       containers:
         - name: falco-operator
           # Replace this with the built image name
-          image: docker.io/nestorsalceda/falco-operator:v0.5.6
+          image: REPLACE_IMAGE
           ports:
           - containerPort: 60000
             name: metrics
