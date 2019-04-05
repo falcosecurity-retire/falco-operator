@@ -1,6 +1,6 @@
 # Try to locate the latest image from https://hub.docker.com/r/sysdig/falco
 
-FROM sysdig/falco:0.12.1
+FROM sysdig/falco:0.14.0
 
 USER root
 
