@@ -22,4 +22,4 @@ build-linux:
 
 .PHONY: dockerimage
 dockerimage: build-linux
-	docker build -t mumoshu/falco-operator:v0.12.1 .
+	docker build -t mumoshu/falco-operator:0.14.0 .
