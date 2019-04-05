@@ -3,7 +3,7 @@ package stub
 import (
 	"context"
 
-	"github.com/mumoshu/falco-operator/pkg/apis/mumoshu/v1alpha1"
+	"github.com/falcosecurity/falco-operator/pkg/apis/mumoshu/v1alpha1"
 
 	"github.com/operator-framework/operator-sdk/pkg/sdk"
 	"github.com/sirupsen/logrus"

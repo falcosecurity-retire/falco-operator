@@ -11,9 +11,9 @@ keywords:
   - troubleshooting
   - run-time
   - operator
-home: https://github.com/mumoshu/falco-operator
+home: https://github.com/falcosecurity/falco-operator
 sources:
-  - https://github.com/mumoshu/falco-operator
+  - https://github.com/falcosecurity/falco-operator
 maintainers:
   - name: mumoshu
     email: ykuoka@gmail.com

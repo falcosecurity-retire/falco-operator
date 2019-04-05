@@ -3,7 +3,7 @@ package cmd
 import (
 	"github.com/spf13/cobra"
 	"time"
-	"github.com/mumoshu/falco-operator/pkg/proc"
+	"github.com/falcosecurity/falco-operator/pkg/proc"
 )
 
 var supervise *cobra.Command
