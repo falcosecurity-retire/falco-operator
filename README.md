@@ -1,6 +1,6 @@
 # falco-operator
 
-[falco-operator](http://github.com/mumoshu/falco-operator) is a [Kubernetes operator](https://coreos.com/operators/)
+[falco-operator](http://github.com/falcosecurity/falco-operator) is a [Kubernetes operator](https://coreos.com/operators/)
 for [Sysdig Falco](https://www.sysdig.com/opensource/falco/).
 
 To know more about the original Sysdig Falco and its Helm chart, have a look at [stable/falco](https://github.com/helm/charts/tree/master/stable/falco).

@@ -2,7 +2,7 @@ package cmd
 
 import (
 	"github.com/spf13/cobra"
-	"github.com/mumoshu/falco-operator/pkg/operator"
+	"github.com/falcosecurity/falco-operator/pkg/operator"
 )
 
 var opts = operator.OperateOpts{}

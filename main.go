@@ -2,7 +2,7 @@ package main
 
 import (
 	"os"
-	"github.com/mumoshu/falco-operator/cmd"
+	"github.com/falcosecurity/falco-operator/cmd"
 )
 
 func main() {
