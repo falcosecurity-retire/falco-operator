@@ -36,10 +36,10 @@ new-upstream: bundle.yaml build push operatorhub
 
 operatorhub:
 	mkdir -p deploy/olm-catalog/falco-operator/$(VERSION)
-	cp deploy/olm-catalog/falco-operator/falco-operator.template.clusterserviceversion.yaml deploy/olm-catalog/falco-operator/$(VERSION)/falco-operator.$(VERSION).clusterserviceversion.yaml
-	sed -i "s/PREVIOUS_VERSION/$(PREVIOUS_VERSION)/" deploy/olm-catalog/falco-operator/$(VERSION)/falco-operator.$(VERSION).clusterserviceversion.yaml
-	sed -i "s/VERSION/$(VERSION)/" deploy/olm-catalog/falco-operator/$(VERSION)/falco-operator.$(VERSION).clusterserviceversion.yaml
-	git add deploy/olm-catalog/falco-operator/$(VERSION)/falco-operator.$(VERSION).clusterserviceversion.yaml
+	cp deploy/olm-catalog/falco-operator/falco-operator.template.clusterserviceversion.yaml deploy/olm-catalog/falco-operator/$(VERSION)/falco-operator.v$(VERSION).clusterserviceversion.yaml
+	sed -i "s/PREVIOUS_VERSION/$(PREVIOUS_VERSION)/" deploy/olm-catalog/falco-operator/$(VERSION)/falco-operator.v$(VERSION).clusterserviceversion.yaml
+	sed -i "s/VERSION/$(VERSION)/" deploy/olm-catalog/falco-operator/$(VERSION)/falco-operator.v$(VERSION).clusterserviceversion.yaml
+	git add deploy/olm-catalog/falco-operator/$(VERSION)/falco-operator.v$(VERSION).clusterserviceversion.yaml
 
 # Smoke testing targets
 e2e: bundle.yaml
