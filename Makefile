@@ -29,7 +29,7 @@ new-upstream: build push bundle.yaml
 	git add bundle.yaml
 	git add Makefile
 	git commit -m "New Falco helm chart release $(VERSION)"
-	git tag falco-operator-helm-v$(VERSION)
+	git tag v$(VERSION)-falco-operator-helm
 	git push --all
 
 # Smoke testing targets
