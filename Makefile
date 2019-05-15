@@ -1,6 +1,6 @@
 IMAGE = falcosecurity/falco-operator-helm
 # Use same version than helm chart
-VERSION = 0.7.5
+VERSION = 0.7.6
 
 .PHONY: build bundle.yaml
 
