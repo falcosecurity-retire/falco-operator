@@ -5,6 +5,7 @@ VERSION = 0.7.3
 .PHONY: build bundle.yaml
 
 build:
+	helm repo update
 	helm fetch stable/falco --version $(VERSION) --untar --untardir helm-charts/
 	operator-sdk build $(IMAGE):$(VERSION)
 	rm -fr helm-charts/falco
@@ -19,13 +20,22 @@ bundle.yaml:
 	echo '---' >> bundle.yaml
 	cat deploy/role_binding.yaml >> bundle.yaml
 	echo '---' >> bundle.yaml
-	sed -i 's|REPLACE_IMAGE|docker.io/$(IMAGE):$(VERSION)|g' deploy/operator.yaml
 	cat deploy/operator.yaml >> bundle.yaml
+	sed -i 's|REPLACE_IMAGE|docker.io/$(IMAGE):$(VERSION)|g' bundle.yaml
 
+# Synchronize operator with the same Helm Chart version
+new-upstream: build push bundle.yaml
+	sed -i "s/^VERSION = .*/VERSION = $(VERSION)/" Makefile
+	git add bundle.yaml
+	git add Makefile
+	git commit -m "New Falco helm chart release $(VERSION)"
+	git tag falco-operator-helm-v$(VERSION)
+	git push --all
+
+# Smoke testing targets
 e2e: bundle.yaml
 	kubectl apply -f bundle.yaml
 	kubectl apply -f deploy/crds/falco_v1alpha1_falco_cr.yaml
-
 
 e2e-clean: bundle.yaml
 	kubectl delete -f deploy/crds/falco_v1alpha1_falco_cr.yaml
