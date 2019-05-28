@@ -1,3 +1,6 @@
+VERSION = 0.15.0
+
+
 .PHONY: testrun
 testrun:
 	go build . && ./falco-operator supervise --set "falco.yaml=rules_file={{.File.Path}}" --watch foo --watch-interval 1s --restart-grace-period 5s --stop-grace-period 500ms -- bash -c 'echo started myapp; cat foo; sleep 100'
@@ -8,7 +11,7 @@ testrun2:
 
 .PHONY: server-defaultns
 server-defaultns:
-	OPERATOR_NAME=falco-erator operator-sdk up local
+	OPERATOR_NAME=falco-operator operator-sdk up local
 
 # WATCH_NAMESPACE="" does not seem to work
 .PHONY: server-allns
@@ -22,4 +25,8 @@ build-linux:
 
 .PHONY: dockerimage
 dockerimage: build-linux
-	docker build -t mumoshu/falco-operator:0.14.0 .
+	docker build -t falcosecurity/falco-operator:${VERSION} .
+
+.PHONY: clean
+clean:
+	rm -rf build
