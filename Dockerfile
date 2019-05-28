@@ -1,10 +1,10 @@
 # Try to locate the latest image from https://hub.docker.com/r/sysdig/falco
 
-FROM sysdig/falco:0.14.0
+FROM falcosecurity/falco:0.15.0
 
 USER root
 
-RUN curl -L https://github.com/Yelp/dumb-init/releases/download/v1.2.1/dumb-init_1.2.1_amd64 -o /usr/local/bin/dumb-init && \
+RUN curl -L https://github.com/Yelp/dumb-init/releases/download/v1.2.2/dumb-init_1.2.2_amd64 -o /usr/local/bin/dumb-init && \
     chmod +x /usr/local/bin/dumb-init
 
 RUN mkdir -p /opt/bin/ \
