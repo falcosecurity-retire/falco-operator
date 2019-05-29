@@ -2,7 +2,7 @@
 
 image:
   repository: mumoshu/falco-operator
-  tag: v0.12.1
+  tag: 0.12.1
   pullPolicy: IfNotPresent
 
 resources: {}
