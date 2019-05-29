@@ -152,7 +152,7 @@ spec:
             path: /usr
         - name: falco-operator-rules
           configMap:
-            name: falco-operator
+            name: {{ template "falco.fullname" . }}
         {{- if (and .Values.ebpf.enabled .Values.ebpf.settings.mountEtcVolume) }}
         - name: etc-fs
           hostPath:
