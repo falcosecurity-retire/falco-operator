@@ -28,7 +28,7 @@ metadata:
         }
       }]
     capabilities: Basic Install
-    categories: Security
+    categories: Security, OpenShift Optional
     certified: "false"
     containerImage: docker.io/falcosecurity/falco-operator-helm:VERSION
     createdAt: "2019-03-12T18:30:00Z"
