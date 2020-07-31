@@ -1,0 +1,6 @@
+resources:
+- cr.yaml
+- crd.yaml
+- operator.yaml
+- rbac.yaml
+- sa.yaml
